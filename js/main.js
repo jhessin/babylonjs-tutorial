@@ -1,12 +1,21 @@
 /// <reference path='./vendor/babylon.d.ts' />
 const {
-  Engine,
+  // Common Resources
   Vector3,
   Color3,
-  Scene,
-  FreeCamera,
-  HemisphericLight,
   MeshBuilder,
+
+  // Engine, Scene, etc.
+  Engine,
+  Scene,
+
+  // Cameras
+  UniversalCamera,
+
+  // Lights
+  HemisphericLight,
+
+  // Materials and textures
   StandardMaterial,
   Texture,
 } = BABYLON;
@@ -22,12 +31,29 @@ function createScene() {
   const scene = new Scene(engine);
 
   // create a camera
-  const camera = new FreeCamera("camera", Vector3.Zero(), scene);
+  //const camera = new FreeCamera("camera", Vector3.Zero(), scene);
+  //const camera = new BABYLON.UniversalCamera(
+  //"camera",
+  //new Vector3(0, 0, -10),
+  //scene
+  //);
+  const camera = new BABYLON.FollowCamera(
+    "camera",
+    new Vector3(0, 25, -50),
+    scene
+  );
+  camera.radius = 5;
   camera.attachControl(canvas, true);
 
   // create a light
-  const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
-  light.position = new Vector3(0, 1, 0);
+  //const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
+  //light.position = new Vector3(0, 1, 0);
+  //const light = new BABYLON.PointLight("light", new Vector3(0, 5, 5), scene);
+  const light = new BABYLON.DirectionalLight(
+    "light",
+    new Vector3(5, -1, 0),
+    scene
+  );
 
   // create a box
   const box = MeshBuilder.CreateBox(
@@ -37,9 +63,9 @@ function createScene() {
     },
     scene
   );
-  box.position = new Vector3(0, 0, 5);
   box.rotation.x = 2;
   box.rotation.y = 3;
+  camera.lockedTarget = box;
 
   // create a sphere
   const sphere = MeshBuilder.CreateSphere(
@@ -50,18 +76,18 @@ function createScene() {
     },
     scene
   );
-  sphere.position = new Vector3(3, 0, 5);
+  sphere.position = new Vector3(3, 0, 0);
   sphere.scaling = new Vector3(0.5, 0.5, 0.5);
 
   // create a plane
   const plane = MeshBuilder.CreatePlane("plane", {}, scene);
-  plane.position = new Vector3(-3, 0, 5);
+  plane.position = new Vector3(-3, 0, 0);
 
   // create a line
   const points = [
-    new Vector3(2, 0, 5),
-    new Vector3(2, 1, 6),
-    new Vector3(2, 1, 4),
+    new Vector3(2, 0, 0),
+    new Vector3(2, 1, 1),
+    new Vector3(2, 1, -1),
   ];
   const lines = MeshBuilder.CreateLines(
     "lines",
