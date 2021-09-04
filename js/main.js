@@ -26,88 +26,132 @@ const canvas = document.getElementById("renderCanvas");
 // create a BabylonJS engine
 const engine = new Engine(canvas, true);
 
+// create Camera
+function createCamera(scene) {
+  const camera = new BABYLON.ArcRotateCamera(
+    "camera",
+    0,
+    0,
+    15,
+    Vector3.Zero(),
+    scene
+  );
+  camera.attachControl(canvas);
+
+  // limit camera movement
+  camera.lowerRadiusLimit = 6;
+  camera.upperRadiusLimit = 20;
+
+  return camera;
+}
+
+// create a light
+function createLight(scene) {
+  const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
+  light.intensity = 0.5;
+  light.groundColor = new Color3(0, 0, 1);
+  return light;
+}
+
+function createSun(scene) {
+  const sunMat = new StandardMaterial("sunMat", scene);
+  sunMat.emissiveTexture = new Texture("../assets/images/sun.jpg", scene);
+  sunMat.diffuseColor = Color3.Black();
+  sunMat.specularColor = Color3.Black();
+
+  const sun = MeshBuilder.CreateSphere(
+    "sun",
+    {
+      segments: 16,
+      diameter: 4,
+    },
+    scene
+  );
+  sun.material = sunMat;
+
+  // sun light
+  const sunLight = new BABYLON.PointLight("sunLight", Vector3.Zero(), scene);
+  sunLight.intensity = 2;
+
+  return sun;
+}
+
+function createPlanet(scene) {
+  const planetMat = new StandardMaterial("planetMat", scene);
+  planetMat.diffuseTexture = new Texture("assets/images/sand.png");
+  planetMat.specularColor = Color3.Black();
+
+  const speeds = [0.01, -0.01, 0.02];
+  for (let i = 0; i < 3; i++) {
+    const planet = MeshBuilder.CreateSphere(
+      `planet${i}`,
+      {
+        segments: 16,
+        diameter: 1,
+      },
+      scene
+    );
+    planet.position.x = 2 * i + 4;
+    planet.material = planetMat;
+
+    planet.orbit = {
+      radius: planet.position.x,
+      speed: speeds[i],
+      angle: 0,
+    };
+
+    scene.registerBeforeRender(() => {
+      planet.position.x = planet.orbit.radius * Math.sin(planet.orbit.angle);
+      planet.position.z = planet.orbit.radius * Math.cos(planet.orbit.angle);
+      planet.orbit.angle += planet.orbit.speed;
+    });
+  }
+}
+
+function createSkybox(scene) {
+  const skyboxMat = new StandardMaterial("skyboxMat", scene);
+  skyboxMat.backFaceCulling = false;
+  // remove reflection in skybox
+  skyboxMat.specularColor = Color3.Black();
+  skyboxMat.diffuseColor = Color3.Black();
+  // texture 6 sides of our box
+  skyboxMat.reflectionTexture = new BABYLON.CubeTexture(
+    "../assets/images/skybox/skybox",
+    scene
+  );
+  skyboxMat.reflectionTexture.coordinatesMode = Texture.SKYBOX_MODE;
+
+  const skybox = MeshBuilder.CreateBox(
+    "skybox",
+    {
+      size: 1000,
+    },
+    scene
+  );
+  skybox.material = skyboxMat;
+
+  // move skybox with camera
+  skybox.infiniteDistance = true;
+
+  return skybox;
+}
+
 function createScene() {
   // create a scene
   const scene = new Scene(engine);
+  scene.clearColor = Color3.Black();
 
   // create a camera
-  //const camera = new FreeCamera("camera", Vector3.Zero(), scene);
-  //const camera = new BABYLON.UniversalCamera(
-  //"camera",
-  //new Vector3(0, 0, -10),
-  //scene
-  //);
-  const camera = new BABYLON.FollowCamera(
-    "camera",
-    new Vector3(0, 25, -50),
-    scene
-  );
-  camera.radius = 5;
-  camera.attachControl(canvas, true);
+  createCamera(scene);
 
   // create a light
-  //const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
-  //light.position = new Vector3(0, 1, 0);
-  //const light = new BABYLON.PointLight("light", new Vector3(0, 5, 5), scene);
-  const light = new BABYLON.DirectionalLight(
-    "light",
-    new Vector3(5, -1, 0),
-    scene
-  );
+  createLight(scene);
 
-  // create a box
-  const box = MeshBuilder.CreateBox(
-    "box",
-    {
-      size: 1,
-    },
-    scene
-  );
-  box.rotation.x = 2;
-  box.rotation.y = 3;
-  camera.lockedTarget = box;
+  createSun(scene);
 
-  // create a sphere
-  const sphere = MeshBuilder.CreateSphere(
-    "sphere",
-    {
-      segments: 32,
-      diameter: 2,
-    },
-    scene
-  );
-  sphere.position = new Vector3(3, 0, 0);
-  sphere.scaling = new Vector3(0.5, 0.5, 0.5);
+  createPlanet(scene);
 
-  // create a plane
-  const plane = MeshBuilder.CreatePlane("plane", {}, scene);
-  plane.position = new Vector3(-3, 0, 0);
-
-  // create a line
-  const points = [
-    new Vector3(2, 0, 0),
-    new Vector3(2, 1, 1),
-    new Vector3(2, 1, -1),
-  ];
-  const lines = MeshBuilder.CreateLines(
-    "lines",
-    {
-      points,
-    },
-    scene
-  );
-
-  // create a material
-  const material = new StandardMaterial("material", scene);
-  material.diffuseColor = Color3.Red();
-  material.emissiveColor = Color3.Green();
-
-  box.material = material;
-
-  const mat2 = new StandardMaterial("mat2", scene);
-  mat2.diffuseTexture = new Texture("assets/dark rock seamless.png");
-
-  sphere.material = mat2;
+  createSkybox(scene);
 
   return scene;
 }
@@ -117,4 +161,8 @@ const scene = createScene();
 
 engine.runRenderLoop(() => {
   scene.render();
+});
+
+window.addEventListener("resize", () => {
+  engine.resize();
 });
